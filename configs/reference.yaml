@@ -1,0 +1,11 @@
+population_size: 10
+generations: 30
+parent_pool: 5
+elites: 2
+life_epochs: 4
+train_examples: 256
+eval_examples: 512
+learning_rate: 0.03
+trait_mutation_std: 0.35
+weight_mutation_std: 0.01
+seeds: [7, 17, 29, 41, 53]

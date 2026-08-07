@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: Alignment Selection Dynamics
+message: If you use or adapt this repository, please cite it using this metadata.
+type: software
+authors:
+  - family-names: Kaczmarek
+    given-names: Sylvester
+year: 2026
+version: 0.1.0
+repository-code: https://github.com/sylvesterkaczmarek/alignment-selection-dynamics
+url: https://www.sylvesterkaczmarek.com
+license: MIT
