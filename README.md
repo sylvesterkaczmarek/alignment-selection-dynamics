@@ -319,11 +319,9 @@ pip install -r requirements-dev.txt
 
 ## Cite this repository
 
-If you use or adapt this repository, please cite
+If you use or adapt this repository, please cite:
 
 > Kaczmarek, S. (2026). *Alignment Selection Dynamics*. GitHub. https://github.com/sylvesterkaczmarek/alignment-selection-dynamics
-
-**BibTeX**
 
 ```bibtex
 @software{Kaczmarek_2026_Alignment_Selection_Dynamics,
