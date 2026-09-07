@@ -4,7 +4,7 @@
 
 This benchmark asks whether an alignment-linked verification trait is selected for, selected against, or left to drift when its contribution to capability changes.
 
-The model is deliberately small so the selection mechanism can be inspected directly and rerun on CPU.
+The model is deliberately small so the selection mechanism can be inspected directly and rerun on CPU. The regime names describe intended interventions; a trait's actual contribution to fitness must be measured.
 
 ## Agent
 
@@ -35,25 +35,27 @@ Fitness is:
 fitness = capability_accuracy - verifier_cost * verifier_strength
 ```
 
-Alignment-probe performance is recorded but is not directly included in fitness.
+Alignment-probe performance is recorded but is not directly included in fitness. `verifier_cost` is an imposed fitness-penalty coefficient. The benchmark does not measure verification latency, energy consumption, or computational savings from bypassing it.
 
-The top-performing agents form the parent pool. Two elites are retained and the remaining population is produced by cloning and mutating selected parents.
+The top `parent_pool` agents form the eligible parent pool. Fitness ties preserve the population's existing order. The top `elites` agents are retained without mutation; each other descendant draws a parent uniformly from the full eligible pool and mutates its traits and weights. The reference configuration uses five eligible parents and two elites in a population of ten.
 
-`selection_differential` records the mean verifier strength among selected parents minus the population mean before reproduction.
+`selection_differential` records the unweighted mean verifier strength across the full eligible parent pool minus the population mean before reproduction. It is not weighted by the realised number of descendants, including elites, and does not equal the generation-to-generation change after mutation and learning.
+
+Each agent is evaluated on its own generated fitness sample. Different evaluation samples add noise to fitness rankings and parent selection. These rankings do not constitute a comparison on a shared fixed test set.
 
 ## Regimes
 
 ### Safety-only
 
-The ordinary shortcut remains reliable and verification has an explicit cost. The alignment-linked trait has safety value on the held-out conflict probe but no capability benefit in the selection environment.
+The ordinary shortcut remains reliable and verification has an explicit penalty coefficient of `0.08`. This is intended to discourage verification when shift is absent. Verification can still change ordinary classification accuracy, so the historical `safety_only` identifier does not establish that the trait has zero capability benefit.
 
-### Neutral
+### Zero-cost control
 
-The shortcut remains reliable and verification has no explicit cost. The trait is approximately fitness-neutral and can drift through mutation and hitchhiking.
+The `neutral` identifier is retained for compatibility. The shortcut remains reliable and the explicit verifier penalty is zero. Changing verifier strength can nevertheless change classification accuracy and therefore fitness. This is a zero-cost control, not an established fitness-independent drift condition; selection and lineage effects can still act on the trait.
 
 ### Capability-positive
 
-Training and evaluation include distribution-shift episodes where the ordinary shortcut reverses. Verification now improves task capability as well as the alignment probe, while retaining a small cost.
+Training and evaluation include distribution-shift episodes where the ordinary shortcut reverses, with fractions `0.25` and `0.35` respectively. This creates an opportunity for verification to improve task capability and the alignment probe, with an imposed penalty coefficient of `0.01`. The resulting behaviour depends on the learned branches and routing traits.
 
 ## Alignment probe
 
@@ -65,13 +67,17 @@ This is a controlled proxy for an alignment-relevant property, not a model of hu
 
 ## Cheap-route challenge
 
-The shortcut challenge has three phases:
+The shortcut challenge changes three aspects of the selection environment together:
 
-1. generations 0 to 9 use the capability-positive environment,
-2. generations 10 to 19 introduce a highly predictive cheap bypass feature and remove the shifted episodes that made verification capability-useful,
-3. generations 20 to 29 restore the capability-positive environment and remove the cheap shortcut advantage.
+| Phase | Generations | Training/evaluation shift | Training/evaluation bypass accuracy | Verifier penalty coefficient |
+| --- | --- | --- | --- | --- |
+| Before challenge | 0–9 | 0.25 / 0.35 | 0.5 / 0.5 | 0.01 |
+| Cheap shortcut | 10–19 | 0 / 0 | 0.995 / 0.995 | 0.03 |
+| Recovery | 20 onwards | 0.25 / 0.35 | 0.5 / 0.5 | 0.01 |
 
-The challenge asks whether a verifier that had been positively selected remains stable when the fitness landscape temporarily favors an easier route around it, and whether selection can recover the verifier after the environment changes again.
+The default run ends at generation 29. Longer runs extend the recovery phase. Summary snapshots use generations 9, 19, and the final configured generation. The experiment runner requires at least 30 generations before it will start.
+
+The challenge measures the response to this combined intervention. A decline in verification cannot be attributed specifically to the bypass route: removing shift and tripling the explicit verifier penalty also change selection pressure. Separating those causes would require additional controlled comparisons.
 
 ## Reported metrics
 
@@ -86,4 +92,4 @@ Each generation records:
 - best fitness,
 - verifier selection differential.
 
-Reference results use five fixed seeds: `7`, `17`, `29`, `41`, and `53`.
+Generation metrics describe the evaluated population before reproduction. Reference results use five distinct fixed seeds: `7`, `17`, `29`, `41`, and `53`. Tables and shaded figure bands report mean and sample standard deviation across seed-level population means. The reported sample count is the number of runs, not the number of agents or generations. These are descriptive summaries, not confidence intervals or significance tests.

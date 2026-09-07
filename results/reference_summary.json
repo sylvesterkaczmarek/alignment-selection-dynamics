@@ -1,13 +1,238 @@
 {
-  "seeds": [7, 17, 29, 41, 53],
+  "config": {
+    "branch_aux_weight_cheap": 0.05,
+    "branch_aux_weight_robust": 0.25,
+    "branch_aux_weight_shortcut": 0.15,
+    "elites": 2,
+    "eval_examples": 512,
+    "generations": 30,
+    "learning_rate": 0.03,
+    "life_epochs": 4,
+    "parent_pool": 5,
+    "population_size": 10,
+    "train_examples": 256,
+    "trait_mutation_std": 0.35,
+    "weight_mutation_std": 0.01
+  },
+  "provenance": {
+    "device": "cpu",
+    "packages": {
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.10.8",
+      "numpy": "2.3.5",
+      "torch": "2.14.0+cpu"
+    },
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+    "python": "3.12.13",
+    "source_sha256": {
+      "alignment_selection_dynamics/__init__.py": "23b69329abf42c970f0f0c2451511f9d5449906efa68be0779f509e84c2f119a",
+      "alignment_selection_dynamics/environment.py": "a1802d0870d7c5c02aa0d9765278578da4f7d59e37ae56074915eb0430701bf2",
+      "alignment_selection_dynamics/evolution.py": "637809a91b3e12be8ed95338405006c9fe42ccba94fdef7efae44b828f9ef046",
+      "alignment_selection_dynamics/io.py": "78fd9209e2ed29402ad79d4a095b0bae691999f6fd257aab823079c1fa7b0f71",
+      "alignment_selection_dynamics/metrics.py": "97aeb341647cac822ada0c52a16a7e56ecffe9fa47ac5f410ff70d333971092f",
+      "alignment_selection_dynamics/model.py": "77c143b84517a832b4d07204c77b9a4ccd52182a94bb2372b6f061379a0f5655",
+      "alignment_selection_dynamics/plotting.py": "5a407a20ad8656c625eff0029ea443899fc79cd43fa587d7d2d3a90d717e0047",
+      "alignment_selection_dynamics/provenance.py": "6dae35a89a57b9178f873bff1f798f50c77b778f258d34cceb5692512b42ebfb",
+      "alignment_selection_dynamics/seeding.py": "4f0d2394f3d301e723a88ac50e3e233fa1fb7fd4939f91fbd7f3efb035700ca3",
+      "experiments/__init__.py": "36d0c908405f94314c8a2cc4c11f2d4cef5f05f88c7d90cc173144742e785c21",
+      "experiments/_common.py": "ec8daa61816fc1120f8d65f6e5538ba987541911da43445ecf7429cb57ebf0fc",
+      "experiments/run_all.py": "210e07695e721ed752dcdae11cac4d8abb027eecbdd1f4819678cf46fbd3aff6",
+      "experiments/selection_regimes.py": "d4bc23072192d0b492b3c78e227c104616866283dfb59b09e260305c1a7d6677",
+      "experiments/shortcut_challenge.py": "c6c361c23996b92f906ec1ece2913ca2b4618cf722ae3dd9d2993bf3d2a172af"
+    },
+    "torch_settings": {
+      "deterministic_algorithms": true,
+      "deterministic_warn_only": true,
+      "num_interop_threads": 9,
+      "num_threads": 1
+    }
+  },
+  "seeds": [
+    7,
+    17,
+    29,
+    41,
+    53
+  ],
   "selection_regimes": {
-    "safety_only": {"verifier_strength": {"mean": 0.014425528855703581, "std": 0.011461722534224008, "n": 5}, "alignment_score": {"mean": 0.0, "std": 0.0, "n": 5}, "capability": {"mean": 0.9809375000000001, "std": 0.001216594648624818, "n": 5}},
-    "neutral": {"verifier_strength": {"mean": 0.5447674018708563, "std": 0.028880990770971404, "n": 5}, "alignment_score": {"mean": 0.45257812499999994, "std": 0.05067548330459511, "n": 5}, "capability": {"mean": 0.9857812499999999, "std": 0.0009407495764681546, "n": 5}},
-    "capability_positive": {"verifier_strength": {"mean": 0.8339932596490961, "std": 0.14403013577080426, "n": 5}, "alignment_score": {"mean": 0.89375, "std": 0.008915111750802491, "n": 5}, "capability": {"mean": 0.92609375, "std": 0.005216343124805267, "n": 5}}
+    "capability_positive": {
+      "alignment_score": {
+        "mean": 0.8895703125000001,
+        "n": 5,
+        "std": 0.008596634814097516
+      },
+      "bypass_strength": {
+        "mean": 0.0575081721282398,
+        "n": 5,
+        "std": 0.038961129764717446
+      },
+      "capability": {
+        "mean": 0.9234375,
+        "n": 5,
+        "std": 0.004177587819571788
+      },
+      "fitness": {
+        "mean": 0.9158716638931159,
+        "n": 5,
+        "std": 0.0037411982931230712
+      },
+      "selection_differential": {
+        "mean": -0.003406703002930933,
+        "n": 5,
+        "std": 0.028267187073192358
+      },
+      "verifier_strength": {
+        "mean": 0.7565836106884065,
+        "n": 5,
+        "std": 0.1399863386023006
+      }
+    },
+    "neutral": {
+      "alignment_score": {
+        "mean": 0.3608984375,
+        "n": 5,
+        "std": 0.043740712951235966
+      },
+      "bypass_strength": {
+        "mean": 0.09370987697390173,
+        "n": 5,
+        "std": 0.04804066161122518
+      },
+      "capability": {
+        "mean": 0.9837890625,
+        "n": 5,
+        "std": 0.0019384212149686744
+      },
+      "fitness": {
+        "mean": 0.9837890625,
+        "n": 5,
+        "std": 0.0019384212149686744
+      },
+      "selection_differential": {
+        "mean": 0.02813529979743946,
+        "n": 5,
+        "std": 0.030878640842510994
+      },
+      "verifier_strength": {
+        "mean": 0.49887589230088053,
+        "n": 5,
+        "std": 0.024876780427518463
+      }
+    },
+    "safety_only": {
+      "alignment_score": {
+        "mean": 0.0,
+        "n": 5,
+        "std": 0.0
+      },
+      "bypass_strength": {
+        "mean": 0.07036834654752336,
+        "n": 5,
+        "std": 0.06330338352492128
+      },
+      "capability": {
+        "mean": 0.9796484375000001,
+        "n": 5,
+        "std": 0.0022710065396482405
+      },
+      "fitness": {
+        "mean": 0.9787163172511333,
+        "n": 5,
+        "std": 0.0022633702254041747
+      },
+      "selection_differential": {
+        "mean": -0.0019000394471944695,
+        "n": 5,
+        "std": 0.003589893853674883
+      },
+      "verifier_strength": {
+        "mean": 0.011651503110833194,
+        "n": 5,
+        "std": 0.008940177189371871
+      }
+    }
   },
   "shortcut_challenge": {
-    "pre_challenge": {"verifier_strength": {"mean": 0.8386762915819415, "std": 0.05712822671141646, "n": 5}, "alignment_score": {"mean": 0.8610546874999999, "std": 0.048284987024165435, "n": 5}, "capability": {"mean": 0.919609375, "std": 0.005761884266690368, "n": 5}},
-    "end_shortcut_phase": {"verifier_strength": {"mean": 0.48138605510348303, "std": 0.16405206989662255, "n": 5}, "alignment_score": {"mean": 0.32109375, "std": 0.14741307170158316, "n": 5}, "capability": {"mean": 0.988046875, "std": 0.0060616139816471746, "n": 5}},
-    "end_recovery": {"verifier_strength": {"mean": 0.7606124317548499, "std": 0.09560520698960058, "n": 5}, "alignment_score": {"mean": 0.8631640624999999, "std": 0.028136729867327397, "n": 5}, "capability": {"mean": 0.9257031250000001, "std": 0.004280419484909956, "n": 5}}
+    "end_recovery": {
+      "alignment_score": {
+        "mean": 0.840234375,
+        "n": 5,
+        "std": 0.038369089671717906
+      },
+      "bypass_strength": {
+        "mean": 0.19143902176480015,
+        "n": 5,
+        "std": 0.10879787348833946
+      },
+      "capability": {
+        "mean": 0.91796875,
+        "n": 5,
+        "std": 0.005395010670676976
+      },
+      "fitness": {
+        "mean": 0.9109640831787911,
+        "n": 5,
+        "std": 0.0049993757896467225
+      },
+      "verifier_strength": {
+        "mean": 0.7004666821209002,
+        "n": 5,
+        "std": 0.06548562505027013
+      }
+    },
+    "end_shortcut_phase": {
+      "alignment_score": {
+        "mean": 0.176640625,
+        "n": 5,
+        "std": 0.2262282690919243
+      },
+      "bypass_strength": {
+        "mean": 0.23282062620293523,
+        "n": 5,
+        "std": 0.18358667095248912
+      },
+      "capability": {
+        "mean": 0.9880859375,
+        "n": 5,
+        "std": 0.0058966910700978675
+      },
+      "fitness": {
+        "mean": 0.9772561058025199,
+        "n": 5,
+        "std": 0.007902357714739395
+      },
+      "verifier_strength": {
+        "mean": 0.36099438991600824,
+        "n": 5,
+        "std": 0.17822553599165164
+      }
+    },
+    "pre_challenge": {
+      "alignment_score": {
+        "mean": 0.8491406250000001,
+        "n": 5,
+        "std": 0.02045687498448528
+      },
+      "bypass_strength": {
+        "mean": 0.0987696790486442,
+        "n": 5,
+        "std": 0.034916485193956084
+      },
+      "capability": {
+        "mean": 0.9166015625,
+        "n": 5,
+        "std": 0.007209386259879585
+      },
+      "fitness": {
+        "mean": 0.9095719179133489,
+        "n": 5,
+        "std": 0.005833059614455043
+      },
+      "verifier_strength": {
+        "mean": 0.7029644586651111,
+        "n": 5,
+        "std": 0.15067885249547783
+      }
+    }
   }
 }

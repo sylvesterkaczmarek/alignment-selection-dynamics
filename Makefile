@@ -13,4 +13,4 @@ shortcut:
 	python -m experiments.shortcut_challenge
 
 all:
-	python -m experiments.run_all
+	python -m experiments.run_all --config configs/reference.yaml

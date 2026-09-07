@@ -28,5 +28,6 @@ Repository = "https://github.com/sylvesterkaczmarek/alignment-selection-dynamics
 where = ["src"]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra"

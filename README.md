@@ -24,39 +24,41 @@ flowchart LR
     C --> G["Held-out alignment probe"]
 ```
 
-The benchmark varies one central condition: **does the verifier help capability?**
+The benchmark compares three environments and their effects on verifier selection:
 
-```text
-safety-only         verifier has a cost but no capability benefit
-neutral             verifier has neither explicit cost nor benefit
-capability-positive verifier improves performance under distribution shift
-```
+| API regime | Environment |
+| --- | --- |
+| `safety_only` | Reliable shortcut with a verifier cost |
+| `neutral` | Reliable shortcut with zero explicit verifier cost |
+| `capability_positive` | Shifted episodes with a verifier cost |
+
+The `neutral` name is retained for compatibility. It is a **zero-cost control**: changing verifier strength still changes predictions and can change fitness. The reliable-shortcut regime also permits accuracy effects from verification.
 
 Across five fixed seeds, the population starts with mean verifier strength `0.409 ± 0.020`. After 30 generations:
 
 | Selection regime | Verifier strength | Alignment probe | Capability |
 | --- | ---: | ---: | ---: |
-| Safety-only | 0.014 ± 0.011 | 0.000 ± 0.000 | 0.981 ± 0.001 |
-| Neutral | 0.545 ± 0.029 | 0.453 ± 0.051 | 0.986 ± 0.001 |
-| Capability-positive | **0.834 ± 0.144** | **0.894 ± 0.009** | 0.926 ± 0.005 |
+| Reliable shortcut with cost (`safety_only`) | 0.012 ± 0.009 | 0.000 ± 0.000 | 0.980 ± 0.002 |
+| Zero-cost control (`neutral`) | 0.499 ± 0.025 | 0.361 ± 0.044 | 0.984 ± 0.002 |
+| Capability-positive | **0.757 ± 0.140** | **0.890 ± 0.009** | 0.923 ± 0.004 |
 
-In this controlled benchmark, the verifier disappears when it is costly and capability-irrelevant, while it becomes much stronger when the same mechanism improves performance under shift.
+In these five runs, verifier strength approaches zero in the reliable-shortcut regime with cost and increases in the environment containing shifted episodes. Values are means ± sample standard deviations across five seed-level population means.
 
 ## The failure test
 
 Positive selection is not automatically stable.
 
-After ten capability-positive generations, the benchmark introduces a highly predictive cheap route and temporarily removes the shifted episodes that made verification useful. Capability stays high, but the alignment-linked verifier loses selection pressure.
+After ten capability-positive generations, the benchmark simultaneously raises bypass-feature accuracy from 0.5 to 0.995, removes training/evaluation shift fractions of 0.25/0.35, and raises the verifier cost from 0.01 to 0.03. Generations 20–29 restore all three settings. Capability stays high during the changed environment while verifier strength and alignment-probe accuracy fall.
 
 | Shortcut challenge phase | Verifier strength | Bypass strength | Alignment probe | Capability |
 | --- | ---: | ---: | ---: | ---: |
-| Before shortcut | 0.839 ± 0.057 | 0.070 ± 0.038 | 0.861 ± 0.048 | 0.920 ± 0.006 |
-| End of cheap-shortcut phase | 0.481 ± 0.164 | 0.184 ± 0.121 | **0.321 ± 0.147** | **0.988 ± 0.006** |
-| End of recovery | 0.761 ± 0.096 | 0.206 ± 0.105 | 0.863 ± 0.028 | 0.926 ± 0.004 |
+| Before shortcut (generation 9) | 0.703 ± 0.151 | 0.099 ± 0.035 | 0.849 ± 0.020 | 0.917 ± 0.007 |
+| End of changed environment (generation 19) | 0.361 ± 0.178 | 0.233 ± 0.184 | **0.177 ± 0.226** | **0.988 ± 0.006** |
+| End of recovery (generation 29) | 0.700 ± 0.065 | 0.191 ± 0.109 | 0.840 ± 0.038 | 0.918 ± 0.005 |
 
-The negative result matters: a capability-linked alignment property can still weaken when the fitness landscape changes and an easier route becomes available. When distribution shift returns, selection substantially recovers the verifier.
+The challenge demonstrates weakening under this combined environment change and recovery after the original settings return. It cannot determine how much of that change is caused by bypass accuracy, the removal of shift, or the higher verifier penalty individually.
 
-These are descriptive results from a small synthetic benchmark, not evidence about advanced self-improving systems.
+These are descriptive results from a small synthetic benchmark. They do not establish behaviour in advanced self-improving systems. The tables and committed histories were regenerated after correcting parent eligibility, cloning and data-seed derivation; they supersede the earlier reference results.
 
 ## Core selection loop
 
@@ -64,12 +66,11 @@ The experiment uses ordinary inherited neural weights plus mutated routing trait
 
 ```python
 fitness = np.asarray([score["fitness"] for score in scores], dtype=float)
-order = np.argsort(-fitness)
+order = np.argsort(-fitness, kind="stable")
 parent_indices = order[: cfg.parent_pool]
 parents = [population[int(i)] for i in parent_indices]
 
-selectable_parents = parents[: max(1, min(4, len(parents)))]
-child = rng.choice(selectable_parents).clone()
+child = rng.choice(parents).clone()
 child.verifier_logit += rng.gauss(0.0, cfg.trait_mutation_std)
 child.bypass_logit += rng.gauss(0.0, cfg.trait_mutation_std)
 ```
@@ -80,13 +81,13 @@ Fitness itself is:
 fitness = capability_accuracy - verifier_cost * verifier_strength
 ```
 
-The alignment probe is recorded separately and does not enter selection fitness. See [`src/alignment_selection_dynamics/evolution.py`](src/alignment_selection_dynamics/evolution.py) and [`docs/method.md`](docs/method.md).
+The alignment probe is recorded separately and does not enter selection fitness. Every selected parent is eligible to reproduce; elites are copied separately. The reported selection differential is the eligible parent pool’s mean verifier strength minus the population mean, not the realised change after reproduction and mutation. Cloning preserves weights, precision and training mode without consuming random draws. See [`src/alignment_selection_dynamics/evolution.py`](src/alignment_selection_dynamics/evolution.py) and [`docs/method.md`](docs/method.md).
 
 ## Project overview
 
 - Evolve populations of small neural agents through repeated learning and selection.
 - Separate ordinary capability from a held-out alignment-relevant conflict probe.
-- Vary whether the verifier is costly, neutral, or capability-enhancing.
+- Vary explicit verifier cost and the frequency of misleading shortcut episodes.
 - Track verifier strength, bypass strength, capability, alignment behavior, fitness, and selection differentials over generations.
 - Introduce a cheap route that can temporarily outcompete the verifier.
 - Test whether the verifier recovers when the capability environment changes again.
@@ -99,10 +100,10 @@ Alignment mechanisms that survive only because they are externally protected may
 This repository turns that idea into a small falsifiable experiment. It asks three separate questions:
 
 - What happens when an alignment-linked trait imposes a capability cost?
-- What happens when it is approximately fitness-neutral?
+- What happens when its explicit fitness cost is zero?
 - What happens when the same trait improves capability under conditions the agent actually encounters?
 
-The shortcut challenge then tests whether positive selection persists when the environment stops rewarding the trait.
+The shortcut challenge then tests whether verifier retention persists under a joint change in shortcut reliability, bypass accuracy and verifier cost.
 
 ## Agent architecture
 
@@ -122,23 +123,23 @@ Branch-level auxiliary losses ensure all three branches remain learnable, keepin
 
 ### Safety-only regime
 
-The ordinary shortcut remains reliable. Verification has a cost and provides no capability benefit in the fitness environment. The held-out alignment probe still benefits from verification, but selection never sees that reward.
+The ordinary shortcut remains reliable and verification has an explicit cost. Verification can still change capability accuracy through the mixture of branch predictions. The held-out alignment probe is measured separately and never directly rewarded.
 
-### Neutral regime
+### Zero-cost control (`neutral`)
 
-The shortcut remains reliable and verification has no explicit cost. The verifier is approximately neutral with respect to fitness and can drift through mutation and lineage effects.
+The shortcut remains reliable and verification has no explicit cost. The verifier still affects predictions, so its trajectory combines accuracy-based selection, mutation and lineage effects. This is not a fitness-independent drift control.
 
 ### Capability-positive regime
 
-The environment contains distribution-shift episodes in which the ordinary shortcut reverses. Verification now improves ordinary capability as well as the held-out alignment probe.
+The environment contains distribution-shift episodes in which the ordinary shortcut reverses. These episodes create an opportunity for verification to improve ordinary capability and the held-out alignment probe; the outcome depends on the learned branches and routing traits.
 
 ### Shortcut challenge
 
 The challenge uses three phases:
 
 1. capability-positive selection,
-2. a cheap shortcut phase with no distribution shift and a highly predictive bypass feature,
-3. recovery after the cheap advantage is removed and shifted episodes return.
+2. a cheap shortcut phase with no distribution shift, a highly predictive bypass feature and a higher verifier cost,
+3. recovery after all three environment controls return to their original settings.
 
 ## Features
 
@@ -178,7 +179,7 @@ pytest -q
 Run the full five-seed reference suite:
 
 ```bash
-python -m experiments.run_all --seeds 7 17 29 41 53 --out results
+python -m experiments.run_all --config configs/reference.yaml --out results
 ```
 
 or:
@@ -219,7 +220,7 @@ results/
     └── verifier_selection_dynamics.png
 ```
 
-The full JSON files contain every generation for every seed. Summary files report mean, sample standard deviation, and sample count.
+The committed full JSON files contain every generation for every seed. Summary files report the mean and sample standard deviation of seed-level population means, plus the number of distinct seeds. Full outputs and the combined summary also record the effective configuration, runtime versions, CPU settings and source hashes. Invalid or nonfinite results are rejected before JSON is written.
 
 ## Repository layout
 
@@ -258,18 +259,21 @@ alignment-selection-dynamics/
 
 ## Reproducibility
 
-The reference suite is designed for CPU execution and completed in under one minute on the development environment used for the checked results.
+The reference suite runs on CPU. Use the YAML configuration above to reproduce the settings in the committed results. Explicit `--seeds`, `--generations` and `--population` arguments override those YAML values; all other `EvolutionConfig` fields can be set in YAML. The three-phase challenge requires at least 30 generations.
+
+Run new comparisons into `results/local/` to preserve the reference files. Invalid configurations, duplicate seeds and nonfinite model outputs stop the experiment instead of producing misleading scores.
 
 Controls include:
 
 - explicit Python, NumPy, and PyTorch seeds
 - deterministic data generation
-- deterministic derived seeds for every lineage and generation
+- coordinate-derived data seeds for every generation, population slot and train/fitness/probe stream
 - deterministic PyTorch algorithms where available
 - identical environment schedules across compared seeds
 - same-seed regression testing
-- machine-readable configuration and results
-- clean-checkout CI smoke experiment
+- machine-readable configuration, runtime metadata, source hashes and generation histories
+- clean-checkout CI experiments covering every regime and all three challenge phases
+- wheel installation and package tests
 
 See [`docs/reproducibility.md`](docs/reproducibility.md).
 
@@ -279,7 +283,9 @@ This repository does not show that selection pressure will preserve alignment in
 
 The verifier is an explicit scalar routing trait in a small neural classifier. The alignment probe is a synthetic shortcut-conflict task. Generational evolution is a controlled analogue of repeated capability improvement, not recursive self-improvement. Real systems would have distributed internal mechanisms, changing objectives, richer environments, strategic behavior, and many routes around any particular safeguard.
 
-The main claim is narrower: **when the experiment makes selection pressure explicit, the fate of the alignment-linked verifier changes materially depending on whether it contributes to capability, and that positive pressure can reverse when a cheaper route appears.**
+The supported claim is narrower: verifier trajectories differ across these synthetic environments, and retention can weaken under a joint change in shift frequency, bypass accuracy and imposed verifier cost. This experiment does not isolate the causal effect of the bypass route.
+
+Verification cost is a chosen fitness penalty. Every forward pass computes all three branches, so these results do not measure computational savings. Agents inherit neural weights and routing traits; Adam optimizer state restarts each generation. Each agent receives separately sampled evaluation data, introducing ranking noise. Five seeds provide descriptive variability, not a calibrated confidence interval or evidence of generality.
 
 See [`docs/limitations.md`](docs/limitations.md).
 

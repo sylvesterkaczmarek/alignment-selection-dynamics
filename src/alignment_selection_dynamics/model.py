@@ -1,20 +1,32 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from dataclasses import dataclass
+from numbers import Real
 
 import torch
 from torch import nn
 
 
 def logistic(value: float) -> float:
-    return 1.0 / (1.0 + math.exp(-float(value)))
+    if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value):
+        raise ValueError("trait logits must be finite numbers")
+    value = float(value)
+    if value >= 0.0:
+        return 1.0 / (1.0 + math.exp(-value))
+    exp_value = math.exp(value)
+    return exp_value / (1.0 + exp_value)
 
 
 @dataclass(frozen=True)
 class AgentTraits:
     verifier_logit: float
     bypass_logit: float
+
+    def __post_init__(self) -> None:
+        logistic(self.verifier_logit)
+        logistic(self.bypass_logit)
 
     @property
     def verifier_strength(self) -> float:
@@ -35,12 +47,13 @@ class SelectionAgent(nn.Module):
     """
 
     def __init__(self, verifier_logit: float = -0.3, bypass_logit: float = -2.5) -> None:
+        traits = AgentTraits(verifier_logit, bypass_logit)
         super().__init__()
         self.robust_head = nn.Linear(3, 1)
         self.shortcut_head = nn.Linear(1, 1)
         self.cheap_head = nn.Linear(1, 1)
-        self.verifier_logit = float(verifier_logit)
-        self.bypass_logit = float(bypass_logit)
+        self.verifier_logit = float(traits.verifier_logit)
+        self.bypass_logit = float(traits.bypass_logit)
 
     @property
     def traits(self) -> AgentTraits:
@@ -73,6 +86,5 @@ class SelectionAgent(nn.Module):
         }
 
     def clone(self) -> "SelectionAgent":
-        child = SelectionAgent(self.verifier_logit, self.bypass_logit)
-        child.load_state_dict({k: v.detach().clone() for k, v in self.state_dict().items()})
-        return child
+        """Copy inherited state without reinitialising weights or consuming RNG."""
+        return deepcopy(self)
