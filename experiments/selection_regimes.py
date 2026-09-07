@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 from pathlib import Path
 
 from alignment_selection_dynamics.evolution import EvolutionConfig, run_evolution
 from alignment_selection_dynamics.io import write_json
-from alignment_selection_dynamics.metrics import aggregate_final_runs
+from alignment_selection_dynamics.metrics import aggregate_final_runs, validate_seeds
 from alignment_selection_dynamics.plotting import plot_regime_metric
+from alignment_selection_dynamics.provenance import execution_metadata
+from experiments._common import argument_parser, experiment_settings
 
 REGIMES = ["safety_only", "neutral", "capability_positive"]
 
 
 def run(seeds: list[int], out_dir: Path, cfg: EvolutionConfig) -> dict:
+    seeds = validate_seeds(seeds)
     runs_by_regime: dict[str, list[dict]] = {}
     summary: dict[str, dict] = {}
     for regime in REGIMES:
@@ -19,7 +23,9 @@ def run(seeds: list[int], out_dir: Path, cfg: EvolutionConfig) -> dict:
         runs_by_regime[regime] = runs
         summary[regime] = aggregate_final_runs(runs)
 
-    write_json(out_dir / "selection_regimes.json", {"seeds": seeds, "runs": runs_by_regime})
+    write_json(out_dir / "selection_regimes.json", {
+        "seeds": seeds, "config": asdict(cfg), "provenance": execution_metadata(), "runs": runs_by_regime,
+    })
     write_json(out_dir / "selection_regimes_summary.json", summary)
     plot_regime_metric(
         runs_by_regime,
@@ -43,18 +49,13 @@ def run(seeds: list[int], out_dir: Path, cfg: EvolutionConfig) -> dict:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Compare selection regimes for an alignment-linked verifier trait.")
-    parser.add_argument("--seeds", nargs="+", type=int, default=[7, 17, 29, 41, 53])
-    parser.add_argument("--out", type=Path, default=Path("results"))
-    parser.add_argument("--generations", type=int, default=30)
-    parser.add_argument("--population", type=int, default=10)
-    return parser.parse_args()
+    return argument_parser("Compare selection regimes for an alignment-linked verifier trait.").parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    cfg = EvolutionConfig(generations=args.generations, population_size=args.population)
-    run(args.seeds, args.out, cfg)
+    seeds, cfg = experiment_settings(args)
+    run(seeds, args.out, cfg)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import asdict, dataclass
 
@@ -9,7 +10,7 @@ from torch import nn
 
 from .environment import EnvironmentSpec, make_dataset, make_environment_schedule
 from .model import SelectionAgent
-from .seeding import seed_everything
+from .seeding import derive_data_seed, seed_everything, validate_seed
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,44 @@ class EvolutionConfig:
     branch_aux_weight_shortcut: float = 0.15
     branch_aux_weight_cheap: float = 0.05
 
+    def __post_init__(self) -> None:
+        minimums = {
+            "population_size": 2,
+            "generations": 1,
+            "parent_pool": 1,
+            "elites": 0,
+            "life_epochs": 0,
+            "train_examples": 1,
+            "eval_examples": 1,
+        }
+        for name, minimum in minimums.items():
+            value = getattr(self, name)
+            if type(value) is not int or value < minimum:
+                raise ValueError(f"{name} must be an integer at least {minimum}, excluding booleans")
+        if self.parent_pool > self.population_size:
+            raise ValueError("parent_pool cannot exceed population_size")
+        if self.elites > self.parent_pool:
+            raise ValueError("elites cannot exceed parent_pool")
+        for name in (
+            "learning_rate",
+            "trait_mutation_std",
+            "weight_mutation_std",
+            "branch_aux_weight_robust",
+            "branch_aux_weight_shortcut",
+            "branch_aux_weight_cheap",
+        ):
+            value = getattr(self, name)
+            if type(value) not in (int, float) or not math.isfinite(value):
+                raise ValueError(f"{name} must be a finite number, excluding booleans")
+            if value < 0 or (name == "learning_rate" and value == 0):
+                bound = "positive" if name == "learning_rate" else "nonnegative"
+                raise ValueError(f"{name} must be {bound}")
+
+
+def _require_finite(tensor: torch.Tensor, description: str) -> None:
+    if not bool(torch.isfinite(tensor).all()):
+        raise FloatingPointError(f"non-finite {description}; refusing to report invalid experiment results")
+
 
 def _train_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg: EvolutionConfig) -> None:
     x, y = make_dataset(
@@ -42,6 +81,8 @@ def _train_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg: Ev
     for _ in range(cfg.life_epochs):
         optimizer.zero_grad(set_to_none=True)
         outputs = agent(x)
+        for name, output in outputs.items():
+            _require_finite(output, f"training output {name}")
         loss = nn.functional.binary_cross_entropy_with_logits(outputs["logit"], y)
         loss = loss + cfg.branch_aux_weight_robust * nn.functional.binary_cross_entropy_with_logits(
             outputs["robust_logit"], y
@@ -52,15 +93,29 @@ def _train_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg: Ev
         loss = loss + cfg.branch_aux_weight_cheap * nn.functional.binary_cross_entropy_with_logits(
             outputs["cheap_logit"], y
         )
+        _require_finite(loss, "training loss")
         loss.backward()
+        for parameter in agent.parameters():
+            if parameter.grad is not None:
+                _require_finite(parameter.grad, "training gradient")
         optimizer.step()
+        for parameter in agent.parameters():
+            _require_finite(parameter, "updated model parameter")
 
 
 def _binary_accuracy(logits: torch.Tensor, labels: torch.Tensor) -> float:
+    _require_finite(logits, "evaluation logits")
     return float(((logits > 0.0) == (labels > 0.5)).float().mean().item())
 
 
-def _evaluate_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg: EvolutionConfig) -> dict[str, float]:
+def _evaluate_agent(
+    agent: SelectionAgent,
+    env: EnvironmentSpec,
+    seed: int,
+    cfg: EvolutionConfig,
+    *,
+    conflict_seed: int,
+) -> dict[str, float]:
     x, y = make_dataset(
         cfg.eval_examples,
         seed,
@@ -68,7 +123,7 @@ def _evaluate_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg:
         cheap_accuracy=env.cheap_eval_accuracy,
         shift_fraction=env.eval_shift_fraction,
     )
-    conflict_x, conflict_y = make_dataset(cfg.eval_examples, seed + 10_003, conflict=True)
+    conflict_x, conflict_y = make_dataset(cfg.eval_examples, conflict_seed, conflict=True)
 
     with torch.no_grad():
         outputs = agent(x)
@@ -99,17 +154,16 @@ def _new_population(
 ) -> tuple[list[SelectionAgent], float]:
     fitness = np.asarray([score["fitness"] for score in scores], dtype=float)
     verifier = np.asarray([score["verifier_strength"] for score in scores], dtype=float)
-    order = np.argsort(-fitness)
+    order = np.argsort(-fitness, kind="stable")
     parent_indices = order[: cfg.parent_pool]
 
     selection_differential = float(verifier[parent_indices].mean() - verifier.mean())
     parents = [population[int(i)] for i in parent_indices]
 
-    next_population = [parents[i].clone() for i in range(min(cfg.elites, len(parents)))]
-    selectable_parents = parents[: max(1, min(4, len(parents)))]
+    next_population = [parents[i].clone() for i in range(cfg.elites)]
 
     while len(next_population) < cfg.population_size:
-        child = rng.choice(selectable_parents).clone()
+        child = rng.choice(parents).clone()
         child.verifier_logit += rng.gauss(0.0, cfg.trait_mutation_std)
         child.bypass_logit += rng.gauss(0.0, cfg.trait_mutation_std)
         with torch.no_grad():
@@ -121,11 +175,11 @@ def _new_population(
 
 
 def run_evolution(regime: str, seed: int, cfg: EvolutionConfig | None = None) -> dict:
-    cfg = cfg or EvolutionConfig()
-    if cfg.population_size < 2:
-        raise ValueError("population_size must be at least 2")
-    if cfg.parent_pool > cfg.population_size:
-        raise ValueError("parent_pool cannot exceed population_size")
+    cfg = EvolutionConfig() if cfg is None else cfg
+    if not isinstance(cfg, EvolutionConfig):
+        raise TypeError("cfg must be an EvolutionConfig")
+    validate_seed(seed)
+    make_environment_schedule(regime, 0)
 
     seed_everything(seed)
     torch.set_num_threads(1)
@@ -147,9 +201,13 @@ def run_evolution(regime: str, seed: int, cfg: EvolutionConfig | None = None) ->
         generation_scores: list[dict[str, float]] = []
 
         for index, agent in enumerate(population):
-            base_seed = seed * 100_000 + generation * 1_000 + index * 10
-            _train_agent(agent, env, base_seed, cfg)
-            generation_scores.append(_evaluate_agent(agent, env, base_seed + 5, cfg))
+            train_seed = derive_data_seed(seed, generation, index, 0)
+            fitness_seed = derive_data_seed(seed, generation, index, 1)
+            conflict_seed = derive_data_seed(seed, generation, index, 2)
+            _train_agent(agent, env, train_seed, cfg)
+            generation_scores.append(
+                _evaluate_agent(agent, env, fitness_seed, cfg, conflict_seed=conflict_seed)
+            )
 
         next_population, selection_differential = _new_population(population, generation_scores, cfg, rng)
         numeric_keys = generation_scores[0].keys()
