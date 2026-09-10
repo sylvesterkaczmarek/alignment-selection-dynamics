@@ -93,3 +93,17 @@ Each generation records:
 - verifier selection differential.
 
 Generation metrics describe the evaluated population before reproduction. Reference results use five distinct fixed seeds: `7`, `17`, `29`, `41`, and `53`. Tables and shaded figure bands report mean and sample standard deviation across seed-level population means. The reported sample count is the number of runs, not the number of agents or generations. These are descriptive summaries, not confidence intervals or significance tests.
+
+## Paired causal protocol
+
+`experiments.causal_factorial` implements `paired-v1` separately from the historical runner above. It branches all eight combinations of bypass accuracy (0.5/0.995), train/evaluation shift (0.25/0.35 versus 0/0), and verifier penalty (0.01/0.03) from one population per root seed. The boundary is after generation 9 reproduction and mutation, before generation 10 learning. Weights, traits, ordering, ancestry and private parent, trait-mutation and weight-mutation random states are preserved. Adam restarts each generation, so no optimizer state crosses this boundary.
+
+Every competing agent sees the same fresh fitness examples within a generation. Independent reporting and conflict batches never affect selection. Data coordinates match across interventions; descendants with matching population slots are not necessarily the same lineage after selection diverges. Initialization and all subsequent streams are private. Removing or resizing diagnostics leaves training and reproduction unchanged.
+
+The unchanged arm is checked against a separately uninterrupted run, including every individual record and final checkpoint. Additional unchanged and combined-challenge arms use random parent eligibility and random elites, with no fitness-based reproduction, or protect both inherited logits from mutation. Protected traits can still change in population frequency through selection over initially different lineages. Robust-feature, shortcut-feature and cheap-feature policies are evaluated on the same reporting examples.
+
+Agent identifiers are scoped by arm and root seed. Records retain parent identifiers, fitness and reporting scores, eligibility, actual offspring counts, and realized trait and weight mutations. The realized offspring-weighted selection differential plus the mean mutation-induced phenotype change equals the newborn mean verifier change, up to floating-point rounding. Symmetric logit mutation can pull sigmoid-transformed traits toward 0.5; it is not generally phenotype-neutral.
+
+Factorial main effects average high-minus-low differences over the other two factors. A two-factor interaction is a difference of differences averaged over the third factor; the three-factor interaction is the corresponding third difference. All contrasts are paired within root seed. Sample standard deviations describe variation across five roots and are not confidence intervals.
+
+In the executed exploratory cohort, changing bypass accuracy alone reduced generation-19 mean conflict-probe accuracy from 0.87758 to 0.31711 while mean verifier strength remained 0.71017. Removing shift alone reduced probe accuracy to 0.49332. Increasing cost alone gave 0.86457. The combined challenge's final recovery deficit was 0.02148 relative to its matched unchanged arm. These revised-stream results must not be pooled with the historical 0.04934 deficit. Gate strength alone does not establish retained function or explain recovery.

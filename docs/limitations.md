@@ -17,3 +17,7 @@ This repository is a controlled selection-dynamics benchmark. It should not be r
 - The model architecture and environment parameters were chosen to make the hypothesized selection regimes experimentally observable in a small CPU-sized benchmark.
 
 The intended use is mechanistic hypothesis testing: make the selection pressures explicit, measure what changes, and identify failure modes that larger experiments should investigate.
+
+## Paired protocol scope
+
+The per-agent fitness samples, combined intervention and unweighted-only accounting described above remain properties of the historical reference. The separate paired protocol uses shared fitness samples, all eight intervention combinations and realized offspring accounting. Training and fitness-evaluation shift are still changed together within that factorial factor. Results use five exploratory roots; independent confirmation and separately varied training/evaluation shifts are needed before broader predictive claims. A protected inherited logit can change in population frequency through selection, and failure to recover within ten observations does not establish permanent loss.

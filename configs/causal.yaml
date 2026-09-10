@@ -1,0 +1,14 @@
+population_size: 10
+generations: 30
+parent_pool: 5
+elites: 2
+life_epochs: 4
+train_examples: 256
+eval_examples: 512
+learning_rate: 0.03
+trait_mutation_std: 0.35
+weight_mutation_std: 0.01
+branch_aux_weight_robust: 0.25
+branch_aux_weight_shortcut: 0.15
+branch_aux_weight_cheap: 0.05
+seeds: [7, 17, 29, 41, 53]
