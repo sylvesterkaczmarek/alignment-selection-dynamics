@@ -6,4 +6,4 @@ recursive-include scripts *.sh
 include results/reference_summary.json
 include results/selection_regimes.json results/selection_regimes_summary.json
 include results/shortcut_challenge.json results/shortcut_challenge_summary.json
-include results/causal_v1/summary.json
+include results/causal_v1/summary.json results/causal_v1/validation_summary.json

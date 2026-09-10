@@ -331,3 +331,22 @@ def test_resume_rejects_changed_settings_or_simulation_source(tmp_path, monkeypa
     manifest_path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="simulation source"):
         runner.run([73], out, cfg, prefix=1, challenge=1, resume=True)
+
+
+def test_committed_causal_summary_uses_runner_schema():
+    import json
+    from pathlib import Path
+    summary = json.loads(Path("results/causal_v1/summary.json").read_text())
+    expected = set(factorial_conditions())
+    assert summary["protocol"] == causal.PROTOCOL
+    assert set(summary["conditions"]) >= expected
+    assert set(summary["arms"]) >= expected
+    assert set(summary["contrasts"]) == {
+        "bypass", "shift_removal", "cost",
+        "bypass_x_shift_removal", "bypass_x_cost", "shift_removal_x_cost",
+        "bypass_x_shift_removal_x_cost",
+    }
+    assert summary["continuation_checks"] == {str(seed): True for seed in summary["seeds"]}
+    validation = json.loads(Path("results/causal_v1/validation_summary.json").read_text())
+    assert validation["validation"]["repeated_arm_trajectories_byte_identical"] == 60
+    assert validation["validation"]["repeated_checkpoint_states_identical"] == 125
