@@ -63,3 +63,17 @@ The two full experiment files retain every generation of every seed, along with 
 The summary files contain mean, sample standard deviation, and sample count across the five seed-level population summaries. Shaded figure bands use the same sample standard deviation. A single-seed run reports standard deviation zero as an output convention; it does not estimate between-run uncertainty. Aggregation rejects repeated seeds, different regimes or configurations, and incomplete or misordered generation histories. Nonfinite statistics and non-standard JSON numeric constants are rejected.
 
 Use the recorded source hashes, effective configuration, and runtime versions when comparing regenerated results. Fixes to parent selection, cloning, and derived seeds change trajectories, so historical outputs produced by the earlier implementation should not be pooled with the corrected reference runs.
+
+## Paired factorial and checkpoints
+
+The historical source, configuration and committed reference outputs are unchanged. Run the separate paired protocol into a new directory:
+
+```bash
+python -m experiments.causal_factorial --config configs/causal.yaml --out results/local/causal-v1
+```
+
+The default run has five root seeds, ten shared initial generations, ten intervention generations, ten recovery generations, eight factorial conditions and four controls. `--prefix` and `--challenge` change the two phase durations; configured generations must leave a nonempty recovery phase. Each root saves its shared pre-challenge checkpoint once, then each arm saves a pre-recovery checkpoint, final checkpoint and compressed individual/generation ledger. `manifest.json` records effective settings and runtime provenance; `summary.json` reports root-level effects and continuation checks. Checkpoints use restricted `weights_only=True` loading.
+
+Outputs are create-only. An interrupted run can use the same command with `--resume`; completed arms are reused, the unchanged arm is verified again, and changed simulation source or runtime is rejected. An incomplete file write is not silently replaced. Preserve that output directory and restart into a new one when a checkpoint or ledger is incomplete.
+
+Validation on 10 September 2026 reproduced all 60 arm trajectories byte-for-byte in a second execution, with all 125 checkpoint states identical. Individual-level accounting was checked for 12,000 post-boundary records. The separate legacy rerun passed 158 tests, reproduced matched pre-challenge numerical histories exactly and verified a mean final probe deficit of 0.0493359375; the largest difference from committed historical numerical cells was 2.22e-16. The paired-protocol tests additionally exercise serialized continuation, reporting independence, random elites, frozen traits/weights, mutation accounting, interrupted-run reuse and invalid evidence rejection.
