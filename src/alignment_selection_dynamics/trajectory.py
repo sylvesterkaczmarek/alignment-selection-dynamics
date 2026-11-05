@@ -36,6 +36,32 @@ def close(actual, expected, name):
         raise ValueError(f"inconsistent {name}")
 
 
+def same_ancestry(left, right):
+    """Exact structure/types/identity, rounding tolerance only for float arithmetic.
+
+    Python random.gauss uses platform libm: the same random draws can differ by
+    one float64 ULP on macOS versus Linux. IDs, integer counts and RNG bits never
+    use this tolerance. Raw file hashes and checkpoint fingerprints stay exact.
+    """
+    if type(left) is not type(right):
+        return False
+    if type(left) is float:
+        return (
+            math.isfinite(left)
+            and math.isfinite(right)
+            and math.isclose(left, right, rel_tol=1e-12, abs_tol=1e-12)
+        )
+    if type(left) is dict:
+        return left.keys() == right.keys() and all(
+            same_ancestry(left[k], right[k]) for k in left
+        )
+    if type(left) is list:
+        return len(left) == len(right) and all(
+            same_ancestry(a, b) for a, b in zip(left, right)
+        )
+    return left == right
+
+
 def validate_segment(history, individuals, start, end, cfg, controls, environments):
     """Checks arithmetic and recorded random draws, without rerunning training."""
     validate_tree(history)
@@ -93,8 +119,10 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
             if (
                 type(record["generation"]) is not int
                 or record["generation"] != generation
-                or canonical({k: record[k] for k in ("id", "parent_id", "mutation")})
-                != canonical(births[slot])
+                or not same_ancestry(
+                    {k: record[k] for k in ("id", "parent_id", "mutation")},
+                    births[slot],
+                )
                 or type(record["train_seed"]) is not int
                 or record["train_seed"]
                 != protocol_seed(start.seed, generation, slot, "train")
@@ -208,7 +236,7 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
         ]:
             close(row[key], expected, key)
         births, traits, dtypes = next_births, next_traits, [dtypes[p] for p in chosen]
-    if canonical(end.births) != canonical(births):
+    if not same_ancestry(end.births, births):
         raise ValueError("final ancestry does not match reproduced selections")
     for agent, pair in zip(end.population, traits):
         close(agent.verifier_logit, pair[0], "final verifier logit")

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import asdict
 import hashlib
 import itertools
@@ -371,3 +372,27 @@ def test_installed_version_matches_runtime():
         importlib.metadata.version("alignment-selection-dynamics")
         == package.__version__
     )
+
+
+@pytest.mark.parametrize(
+    "other,expected",
+    [
+        (-0.3612772269036276, True),
+        (-0.3612772269036275 + 1e-7, False),
+        (True, False),
+        (-0.36, False),
+    ],
+)
+def test_ancestry_rounding_is_typed_and_tightly_bounded(other, expected):
+    from alignment_selection_dynamics.trajectory import same_ancestry
+
+    a = {"id": "101:1:3", "count": 2, "mutation": {"bypass_logit": -0.3612772269036275}}
+    b = deepcopy(a)
+    b["mutation"]["bypass_logit"] = other
+    assert same_ancestry(a, b) is expected
+    b = deepcopy(a)
+    b["count"] = 2.0
+    assert not same_ancestry(a, b)
+    b = deepcopy(a)
+    b["id"] = "101:1:4"
+    assert not same_ancestry(a, b)

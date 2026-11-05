@@ -82,7 +82,9 @@ complete prefix/arm trajectories, checkpoints at all branch boundaries, the
 summary, and a completion manifest with file checksums. The verifier checks
 recorded fitness arithmetic, ordered identity, every offspring and elite count,
 actual parent draws, trait/weight mutation draws, boundary generator states,
-checkpoint fingerprints, and all seed-level summaries.
+checkpoint fingerprints, and all seed-level summaries. Platform float arithmetic
+uses a documented 1e-12 ancestry tolerance; IDs, counts and file/checkpoint hashes
+remain exact. Summary-only recomputation permits 1e-11 relative rounding tolerance.
 
 It does not independently establish that reported predictions were produced by
 training. Separate execution replay checks that claim. Hashes establish internal
