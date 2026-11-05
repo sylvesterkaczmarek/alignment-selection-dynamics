@@ -11,6 +11,32 @@ Controlled evolutionary experiments testing when an alignment-linked verificatio
 
 Each lineage inherits a small neural policy plus two scalar traits: a verifier that corrects misleading shortcut behavior using robust evidence, and a cheap bypass path. Descendants learn, mutate, compete on capability, and reproduce. Alignment-probe performance is measured but is never directly rewarded by the fitness function.
 
+## November research candidate
+
+Version **0.2.0rc1** is an unpublished candidate awaiting separate independent review.
+The existing paired factorial is retained and hardened. The new
+[validation study](docs/factorial-validation.md) uses five new root seeds, all eight
+factor combinations, four controls and two additional arms that separate training
+shift from selection-evaluation shift. Complete individual ledgers and checkpoints
+are available under [results/factorial-validation-v2](results/factorial-validation-v2).
+The historical summaries and reference configuration remain unchanged.
+
+In these five new roots, the end-challenge conflict-probe score is **0.879 ± 0.018**
+with the environment unchanged, **0.870 ± 0.018** when only training shift is removed,
+and **0.563 ± 0.217** when only selection-evaluation shift is removed. These are
+means and sample standard deviations of root-level population scores. They describe
+this small synthetic design; they do not establish general alignment preservation.
+
+```bash
+python -m experiments.showcase --out /tmp/asd-showcase-new
+python -m experiments.verify_factorial results/factorial-validation-v2
+```
+
+The showcase runs eight small checks. The evidence verifier recomputes recorded
+selection, mutation and aggregation arithmetic; it does not retrain neural models.
+Both commands run on CPU without external services. Output directories must be new.
+See the [audit and compatibility record](docs/audit-2026-11-05.md).
+
 ## At a glance
 
 ```mermaid
@@ -179,7 +205,7 @@ pytest -q
 Run the full five-seed reference suite:
 
 ```bash
-python -m experiments.run_all --config configs/reference.yaml --out results
+python -m experiments.run_all --config configs/reference.yaml --out results/local/reference-new
 ```
 
 or:
@@ -283,7 +309,7 @@ This repository does not show that selection pressure will preserve alignment in
 
 The verifier is an explicit scalar routing trait in a small neural classifier. The alignment probe is a synthetic shortcut-conflict task. Generational evolution is a controlled analogue of repeated capability improvement, not recursive self-improvement. Real systems would have distributed internal mechanisms, changing objectives, richer environments, strategic behavior, and many routes around any particular safeguard.
 
-The supported claim is narrower: verifier trajectories differ across these synthetic environments, and retention can weaken under a joint change in shift frequency, bypass accuracy and imposed verifier cost. This experiment does not isolate the causal effect of the bypass route.
+The supported claim is narrower: verifier trajectories differ across these synthetic environments, and retention can weaken under a joint change in shift frequency, bypass accuracy and imposed verifier cost. This historical combined-intervention experiment does not isolate the causal effect of the bypass route; the separately labelled paired factorial varies those controls.
 
 Verification cost is a chosen fitness penalty. Every forward pass computes all three branches, so these results do not measure computational savings. Agents inherit neural weights and routing traits; Adam optimizer state restarts each generation. Each agent receives separately sampled evaluation data, introducing ranking noise. Five seeds provide descriptive variability, not a calibrated confidence interval or evidence of generality.
 

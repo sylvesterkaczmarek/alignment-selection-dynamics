@@ -1,9 +1,8 @@
-include Makefile requirements.txt requirements-dev.txt
-recursive-include configs *.yaml
+include LICENSE README.md CITATION.cff Makefile CHANGELOG.md requirements*.txt
 recursive-include docs *.md
-recursive-include experiments *.py
-recursive-include scripts *.sh
-include results/reference_summary.json
-include results/selection_regimes.json results/selection_regimes_summary.json
-include results/shortcut_challenge.json results/shortcut_challenge_summary.json
-include results/causal_v1/summary.json results/causal_v1/validation_summary.json
+recursive-include configs *.yaml
+recursive-include tests *.py
+recursive-include scripts *.py *.sh
+recursive-include results *.json *.gz *.pt
+recursive-include assets *.png
+recursive-include .github/workflows *.yml
