@@ -5,7 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from alignment_selection_dynamics.evolution import EvolutionConfig, run_evolution
-from alignment_selection_dynamics.io import write_json
+from alignment_selection_dynamics.io import write_json, refuse_existing
 from alignment_selection_dynamics.metrics import summarize, validate_run_cohort, validate_seeds
 from alignment_selection_dynamics.plotting import plot_shortcut_challenge
 from alignment_selection_dynamics.provenance import execution_metadata
@@ -25,6 +25,7 @@ def phase_snapshot(runs: list[dict], generation: int) -> dict[str, dict]:
 
 def run(seeds: list[int], out_dir: Path, cfg: EvolutionConfig) -> dict:
     seeds = validate_seeds(seeds)
+    refuse_existing(out_dir / name for name in ['shortcut_challenge.json', 'shortcut_challenge_summary.json'])
     if cfg.generations < 30:
         raise ValueError("shortcut_challenge requires at least 30 generations for the fixed three-phase schedule")
     runs = [run_evolution("shortcut_challenge", seed, cfg) for seed in seeds]

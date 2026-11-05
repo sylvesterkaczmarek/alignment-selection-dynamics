@@ -9,16 +9,43 @@ import yaml
 from alignment_selection_dynamics.evolution import EvolutionConfig
 from alignment_selection_dynamics.metrics import validate_seeds
 
+
+class UniqueSafeLoader(yaml.SafeLoader):
+    pass
+
+
+def unique_mapping(loader, node, deep=False):
+    loader.flatten_mapping(node)
+    out = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if type(key) is not str or key in out:
+            raise ValueError("configuration keys must be unique strings")
+        out[key] = loader.construct_object(value_node, deep=deep)
+    return out
+
+
+UniqueSafeLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping
+)
 DEFAULT_SEEDS = [7, 17, 29, 41, 53]
 
 
 def argument_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--config", type=Path, help="YAML EvolutionConfig fields and seeds")
-    parser.add_argument("--seeds", nargs="+", type=int, help="override configuration seeds")
+    parser.add_argument(
+        "--config", type=Path, help="YAML EvolutionConfig fields and seeds"
+    )
+    parser.add_argument(
+        "--seeds", nargs="+", type=int, help="override configuration seeds"
+    )
     parser.add_argument("--out", type=Path, default=Path("results"))
-    parser.add_argument("--generations", type=int, help="override configuration generations")
-    parser.add_argument("--population", type=int, help="override configuration population size")
+    parser.add_argument(
+        "--generations", type=int, help="override configuration generations"
+    )
+    parser.add_argument(
+        "--population", type=int, help="override configuration population size"
+    )
     return parser
 
 
@@ -26,13 +53,23 @@ def experiment_settings(args: argparse.Namespace) -> tuple[list[int], EvolutionC
     values = {}
     if args.config is not None:
         with args.config.open(encoding="utf-8") as handle:
-            values = yaml.safe_load(handle)
-        if not isinstance(values, dict) or not all(isinstance(key, str) for key in values):
+            raw = handle.read(1048577)
+        if len(raw.encode("utf-8")) > 1048576:
+            raise ValueError("configuration exceeds 1 MiB")
+        try:
+            values = yaml.load(raw, Loader=UniqueSafeLoader)
+        except (yaml.YAMLError, RecursionError) as exc:
+            raise ValueError("invalid YAML configuration") from exc
+        if not isinstance(values, dict) or not all(
+            isinstance(key, str) for key in values
+        ):
             raise ValueError("Configuration must be a YAML mapping with string keys")
         allowed = {field.name for field in fields(EvolutionConfig)} | {"seeds"}
         unknown = set(values) - allowed
         if unknown:
-            raise ValueError(f"Unknown configuration fields: {', '.join(sorted(unknown))}")
+            raise ValueError(
+                f"Unknown configuration fields: {', '.join(sorted(unknown))}"
+            )
     configured_seeds = values.pop("seeds", DEFAULT_SEEDS)
     seeds = args.seeds if args.seeds is not None else configured_seeds
     if not isinstance(seeds, list):

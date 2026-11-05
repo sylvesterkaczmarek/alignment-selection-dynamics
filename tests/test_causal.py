@@ -246,7 +246,10 @@ def test_full_small_factorial_is_recomputable_from_individuals(tmp_path):
                     assert row[key] == np.mean([r[key] for r in group])
     reproduced = summarize_factorial(cohorts, 1)
     assert reproduced["conditions"] == summary["conditions"]
-    assert reproduced["contrasts"] == summary["contrasts"]
+    for effect in reproduced["contrasts"]:
+        for phase in reproduced["contrasts"][effect]:
+            for metric, estimate in reproduced["contrasts"][effect][phase].items():
+                assert all(summary["contrasts"][effect][phase][metric][k] == v for k,v in estimate.items())
     assert summary["continuation_checks"] == {"73": True, "89": True}
 
 

@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "alignment-selection-dynamics"
-version = "0.1.0"
+version = "0.2.0"
 description = "Controlled evolutionary experiments on when alignment-linked verifier traits are selected for or optimized away."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "Sylvester Kaczmarek"}]
 dependencies = [
   "torch>=2.6,<3",
@@ -18,16 +19,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
 
 [project.urls]
 Homepage = "https://www.sylvesterkaczmarek.com"
 Repository = "https://github.com/sylvesterkaczmarek/alignment-selection-dynamics"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "."]
+include = ["alignment_selection_dynamics*", "experiments*"]
+namespaces = false
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.ruff.lint]
+select = ["F"]

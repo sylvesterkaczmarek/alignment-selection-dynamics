@@ -21,3 +21,12 @@ The intended use is mechanistic hypothesis testing: make the selection pressures
 ## Paired protocol scope
 
 The per-agent fitness samples, combined intervention and unweighted-only accounting described above remain properties of the historical reference. The separate paired protocol uses shared fitness samples, all eight intervention combinations and realized offspring accounting. Training and fitness-evaluation shift are still changed together within that factorial factor. Results use five exploratory roots; independent confirmation and separately varied training/evaluation shifts are needed before broader predictive claims. A protected inherited logit can change in population frequency through selection, and failure to recover within ten observations does not establish permanent loss.
+
+## Separate shift comparison
+
+The November validation study adds training-only and evaluation-only shift-removal
+arms at baseline bypass reliability and cost. This separates those two controls
+within the synthetic experiment; it does not establish generality. Descendants and
+generations are dependent observations. Paired bootstrap intervals use five root
+seeds and are descriptive, without correction for multiple comparisons. The complete
+raw ledgers and failures remain available for independent review.

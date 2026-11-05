@@ -13,3 +13,5 @@ results/local/
 results/figures/
 build/
 dist/
+
+.ruff_cache/

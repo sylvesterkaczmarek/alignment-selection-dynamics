@@ -1,0 +1,69 @@
+{
+  "challenge": 10,
+  "config": {
+    "branch_aux_weight_cheap": 0.05,
+    "branch_aux_weight_robust": 0.25,
+    "branch_aux_weight_shortcut": 0.15,
+    "elites": 2,
+    "eval_examples": 512,
+    "generations": 30,
+    "learning_rate": 0.03,
+    "life_epochs": 4,
+    "parent_pool": 5,
+    "population_size": 10,
+    "train_examples": 256,
+    "trait_mutation_std": 0.35,
+    "weight_mutation_std": 0.01
+  },
+  "initial_provenance": {
+    "device": "cpu",
+    "packages": {
+      "PyYAML": "6.0.3",
+      "matplotlib": "3.11.2",
+      "numpy": "2.5.4",
+      "torch": "2.15.0"
+    },
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.3",
+    "source_sha256": {
+      "alignment_selection_dynamics/__init__.py": "3bd34c4bb9e4554ea56f371f1eb1bc5afeabd03846e01206b775a217f2dcb52f",
+      "alignment_selection_dynamics/causal.py": "ccc034aeb3630b6a6404053deb338c94a87a18422b183172ca28c5fc7db06213",
+      "alignment_selection_dynamics/checkpoint_validation.py": "be10b310ff3cd026231478ac89eaae94e170e9b821fb2a5bddbdac194d2d4a53",
+      "alignment_selection_dynamics/environment.py": "a1802d0870d7c5c02aa0d9765278578da4f7d59e37ae56074915eb0430701bf2",
+      "alignment_selection_dynamics/evolution.py": "bfd19861c03e8c665b9dbf2255b581b5fffb8b4bd08b7e71681b22541edc5f50",
+      "alignment_selection_dynamics/integrity.py": "87b140e8589d70fa6cf82acc2e98614941df2f336bc40c695d3b866c3c192c8c",
+      "alignment_selection_dynamics/io.py": "5947e3f1957ac413bb229f5525f006aae6f7a010f2923b96e9ad68390fa094d7",
+      "alignment_selection_dynamics/metrics.py": "b4eb4f70a35582951ae5e9492463fde2764a4d6c2b3d7206aee275c8cb8df127",
+      "alignment_selection_dynamics/model.py": "77c143b84517a832b4d07204c77b9a4ccd52182a94bb2372b6f061379a0f5655",
+      "alignment_selection_dynamics/plotting.py": "5a407a20ad8656c625eff0029ea443899fc79cd43fa587d7d2d3a90d717e0047",
+      "alignment_selection_dynamics/provenance.py": "6dae35a89a57b9178f873bff1f798f50c77b778f258d34cceb5692512b42ebfb",
+      "alignment_selection_dynamics/seeding.py": "4f0d2394f3d301e723a88ac50e3e233fa1fb7fd4939f91fbd7f3efb035700ca3",
+      "alignment_selection_dynamics/trajectory.py": "2cac9815b8e4e1e8dcf4cb9a184491e561f8d288d1cf84d729e36ef81bfa3b78",
+      "experiments/__init__.py": "36d0c908405f94314c8a2cc4c11f2d4cef5f05f88c7d90cc173144742e785c21",
+      "experiments/_common.py": "59a63c0b7b37817e237d6fad456e1f44de56fb3ea9163b55fd1399beca6fce82",
+      "experiments/causal_factorial.py": "ea23d192907528289187e6108003f4a6188895ce5c4dd604e5fd2fdb6bf8f44f",
+      "experiments/run_all.py": "2e96fcb27fe1420e754281e580d07635d151d418d54c20a72db3f41a00346d92",
+      "experiments/selection_regimes.py": "c5a98445fb6568dfb7b21724ce8b01170a6716d24c3261d95176299aea3dd502",
+      "experiments/shortcut_challenge.py": "41cdd93538b981d971518a61d38069b09fcdfbdf9ee1f20aa598462109a8f96c",
+      "experiments/showcase.py": "0faf4036961ec79dd1c6acfd654453829661b57940c4530ddebf4c2887eb2209",
+      "experiments/verify_factorial.py": "7db11c290253d061ada0d7a45949705a5211e90131b90bc84b9f54db0bee263b"
+    },
+    "torch_settings": {
+      "deterministic_algorithms": true,
+      "deterministic_warn_only": false,
+      "num_interop_threads": 15,
+      "num_threads": 1
+    }
+  },
+  "prefix": 10,
+  "protocol": "paired-v1",
+  "resume_provenance": [],
+  "seeds": [
+    101,
+    103,
+    107,
+    109,
+    113
+  ],
+  "split_shift": true
+}

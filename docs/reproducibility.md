@@ -30,7 +30,7 @@ bash scripts/run_reference_suite.sh
 Equivalent command:
 
 ```bash
-python -m experiments.run_all --config configs/reference.yaml --out results
+python -m experiments.run_all --config configs/reference.yaml --out results/local/reference-new
 ```
 
 The command reads `configs/reference.yaml`. It accepts every `EvolutionConfig` field, including the three branch auxiliary-loss weights, plus a `seeds` list. Unknown fields and invalid types or ranges are rejected. `--seeds`, `--generations`, and `--population` explicitly override the corresponding YAML values; omitted settings use the dataclass defaults. Without `--config`, the same defaults and five reference seeds are used.
@@ -79,3 +79,24 @@ Outputs are create-only. An interrupted run can use the same command with `--res
 Validation on 10 September 2026 reproduced all 60 arm trajectories byte-for-byte in a second execution, with all 125 checkpoint states identical. Individual-level accounting was checked for 12,000 post-boundary records. The separate legacy rerun passed 158 tests, reproduced matched pre-challenge numerical histories exactly and verified a mean final probe deficit of 0.0493359375; the largest difference from committed historical numerical cells was 2.22e-16. The paired-protocol tests additionally exercise serialized continuation, reporting independence, random elites, frozen traits/weights, mutation accounting, interrupted-run reuse and invalid evidence rejection.
 
 `results/causal_v1/summary.json` is the direct output of the documented factorial command. The independently assembled validation record from the original execution is preserved as `results/causal_v1/validation_summary.json`; it contains the repeated-run and legacy-validation checks. Cross-platform reruns can differ in derived floating-point trait means at roughly machine precision while reproducing the reported effects.
+
+## November validation candidate
+
+The new study and its exact reproduction commands are described in
+[factorial-validation.md](factorial-validation.md). Complete compressed ledgers and
+CPU checkpoints are checked in separately under results/factorial-validation-v2.
+See [the audit record](audit-2026-11-05.md) for schema, strict validation and output
+compatibility. Historical result files remain unchanged. The new experiment commands
+are packaged and are tested from a non-editable wheel outside the source checkout.
+
+## Independent release reference
+
+The direct-tensor learning/arithmetic reference runs with:
+
+```sh
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python scripts/independent_reference.py results/factorial-validation-v2
+```
+
+See independent-review-2026-11-05.md for the exact scope. The source distribution
+includes this script. A changed source version should write a new study directory;
+the checked historical evidence remains unchanged.

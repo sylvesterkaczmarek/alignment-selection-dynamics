@@ -76,6 +76,7 @@ def _train_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg: Ev
         cheap_accuracy=env.cheap_train_accuracy,
         shift_fraction=env.train_shift_fraction,
     )
+    x = x.to(dtype=next(agent.parameters()).dtype)
     optimizer = torch.optim.Adam(agent.parameters(), lr=cfg.learning_rate)
 
     for _ in range(cfg.life_epochs):
@@ -104,6 +105,11 @@ def _train_agent(agent: SelectionAgent, env: EnvironmentSpec, seed: int, cfg: Ev
 
 
 def _binary_accuracy(logits: torch.Tensor, labels: torch.Tensor) -> float:
+    if (not isinstance(logits, torch.Tensor) or not isinstance(labels, torch.Tensor)
+            or logits.ndim != 1 or logits.shape != labels.shape or logits.numel() == 0
+            or logits.is_complex() or labels.is_complex() or logits.device != labels.device
+            or not bool(((labels == 0) | (labels == 1)).all())):
+        raise ValueError("accuracy requires nonempty matching vectors and binary labels on one device")
     _require_finite(logits, "evaluation logits")
     return float(((logits > 0.0) == (labels > 0.5)).float().mean().item())
 

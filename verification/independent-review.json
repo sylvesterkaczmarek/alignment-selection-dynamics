@@ -1,0 +1,28 @@
+{
+  "candidate": "f733f1965a928d13ef3828b6bf25c01b4838348e",
+  "original_base": "3c90ec22349ed30abde3933b2bdd7cefb085bec6",
+  "review_date": "2026-11-05",
+  "initial_review_cases": 30,
+  "initial_failures": 23,
+  "initial_controls_passed": 7,
+  "expanded_review_cases_passed": 45,
+  "source_tests_passed": 322,
+  "original_implementation_audit_cases": 28,
+  "original_implementation_audit_failures_reproduced": 28,
+  "candidate_retraining_files_identical": 223,
+  "independent_root_seeds": 5,
+  "arm_root_combinations": 70,
+  "independent_reference": {
+    "status": "PASS",
+    "root_seeds": 5,
+    "arm_root_combinations": 70,
+    "individual_records_checked": 14500,
+    "fitness_values_recomputed": 14500,
+    "feature_policy_scores_recomputed": 8700,
+    "boundary_agents_independently_trained_and_scored": 1400,
+    "binary_predictions_scored": 2150400,
+    "factorial_metric_contrasts_recomputed": 56,
+    "scope": "Independent direct-tensor model/training and arithmetic reference using the same PyTorch Adam dependency; scores checked against ledgers, not a separate external certification."
+  },
+  "scope": "Independently authored test/reference design, not external human certification. No private repository or paid inference used."
+}
