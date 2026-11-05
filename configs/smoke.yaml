@@ -1,0 +1,8 @@
+seeds: [73]
+population_size: 3
+parent_pool: 2
+elites: 1
+generations: 3
+life_epochs: 1
+train_examples: 8
+eval_examples: 16
