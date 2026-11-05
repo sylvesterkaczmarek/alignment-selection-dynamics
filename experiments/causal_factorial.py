@@ -21,6 +21,7 @@ from alignment_selection_dynamics.causal import (
     load_checkpoint,
     save_checkpoint,
 )
+from alignment_selection_dynamics.evidence_contracts import validate_manifest, validate_prefix, validate_arm
 from alignment_selection_dynamics.environment import EnvironmentSpec
 from alignment_selection_dynamics.evolution import EvolutionConfig
 from alignment_selection_dynamics.io import write_json, write_bytes
@@ -266,21 +267,19 @@ def run(
     manifest_path = out / "manifest.json"
     if resume:
         manifest = strict_json(manifest_path.read_text())
+        validate_manifest(manifest)
         if any(canonical(manifest.get(k)) != canonical(v) for k, v in settings.items()):
             raise ValueError("Resume settings differ from the saved experiment")
         old_hashes = manifest["initial_provenance"]["source_sha256"]
         current = execution_metadata()
-        for name, digest in old_hashes.items():
-            if (
-                name.startswith("alignment_selection_dynamics/")
-                or name == "experiments/causal_factorial.py"
-            ) and current["source_sha256"].get(name) != digest:
-                raise ValueError("Cannot resume after changing simulation source")
+        if current["source_sha256"] != old_hashes:
+            raise ValueError("Cannot resume after changing simulation source")
         previous = manifest["initial_provenance"]
         if (
             previous["packages"] != current["packages"]
             or previous["python"] != current["python"]
             or previous["platform"] != current["platform"]
+            or canonical(previous["torch_settings"]) != canonical(current["torch_settings"])
         ):
             raise ValueError("Cannot resume in a different recorded runtime")
         if (out / "summary.json").exists():
@@ -309,6 +308,7 @@ def run(
                 raise ValueError(
                     "Saved prefix does not match its checkpoint or settings"
                 )
+            validate_prefix(saved_prefix, seed, cfg, fingerprint)
             pre_history, pre_individuals = (
                 saved_prefix["history"],
                 saved_prefix["individuals"],
@@ -354,6 +354,7 @@ def run(
                     raise ValueError(
                         "Saved arm does not match the requested comparison"
                     )
+                validate_arm(payload, seed, name, cfg, controls, fingerprint)
                 end = load_checkpoint(target / "final.pt")
                 if end.next_generation != cfg.generations:
                     raise ValueError("Saved arm has an incomplete final checkpoint")

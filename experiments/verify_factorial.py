@@ -13,6 +13,7 @@ from alignment_selection_dynamics.causal import (
     checkpoint_fingerprint,
     PROTOCOL,
 )
+from alignment_selection_dynamics.evidence_contracts import validate_manifest, validate_prefix, validate_arm
 from alignment_selection_dynamics.evolution import EvolutionConfig
 from alignment_selection_dynamics.integrity import canonical, strict_json
 from alignment_selection_dynamics.metrics import validate_seeds
@@ -52,6 +53,7 @@ def verify(directory):
         or manifest["protocol"] != PROTOCOL
     ):
         raise ValueError("unsupported study manifest")
+    validate_manifest(manifest)
     seeds = validate_seeds(manifest["seeds"])
     cfg = EvolutionConfig(**manifest["config"])
     if manifest["config"].keys() != asdict(cfg).keys():
@@ -108,6 +110,7 @@ def verify(directory):
             or shared.next_generation != prefix
         ):
             raise ValueError("prefix identity mismatch")
+        validate_prefix(pre, seed, cfg, checkpoint_fingerprint(shared))
         validate_segment(
             pre["history"],
             pre["individuals"],
@@ -140,6 +143,7 @@ def verify(directory):
                 or end.next_generation != cfg.generations
             ):
                 raise ValueError("arm identity or checkpoint binding mismatch")
+            validate_arm(payload, seed, arm, cfg, controls, checkpoint_fingerprint(shared))
             for state in (shared, middle, end):
                 if (
                     canonical(state.config) != canonical(asdict(cfg))

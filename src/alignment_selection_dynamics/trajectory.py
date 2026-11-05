@@ -6,7 +6,9 @@ import math
 import random
 import numpy as np
 import torch
-from .causal import checkpoint_fingerprint, protocol_seed
+from .causal import checkpoint_fingerprint, protocol_seed, _payload
+from .checkpoint_validation import validate_payload
+from .environment import make_dataset
 from .integrity import canonical, finite, validate_tree
 from .model import logistic
 
@@ -62,8 +64,29 @@ def same_ancestry(left, right):
     return left == right
 
 
-def validate_segment(history, individuals, start, end, cfg, controls, environments):
+def validate_segment(
+    history,
+    individuals,
+    start,
+    end,
+    cfg,
+    controls,
+    environments,
+    *,
+    report_examples=None,
+):
     """Checks arithmetic and recorded random draws, without rerunning training."""
+    validate_payload(_payload(start))
+    validate_payload(_payload(end))
+    if (
+        canonical(start.config) != canonical(asdict(cfg))
+        or canonical(end.config) != canonical(asdict(cfg))
+        or canonical(end.controls) != canonical(asdict(controls))
+    ):
+        raise ValueError("segment checkpoint configuration or controls mismatch")
+    report_examples = cfg.eval_examples if report_examples is None else report_examples
+    if type(report_examples) is not int or report_examples < 1:
+        raise ValueError("report_examples must be a positive integer")
     validate_tree(history)
     validate_tree(individuals)
     if (
@@ -83,11 +106,43 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
     births = start.births
     traits = [(a.verifier_logit, a.bypass_logit) for a in start.population]
     dtypes = [next(a.parameters()).dtype for a in start.population]
+    modes = [
+        {name: module.training for name, module in agent.named_modules()}
+        for agent in start.population
+    ]
+    protected = {
+        name
+        for name, _ in start.population[0].named_parameters()
+        if cfg.life_epochs == 0
+        or controls.freeze == "all"
+        or (controls.freeze == "robust" and name.startswith("robust_head."))
+    }
+    known_weights = [
+        {
+            name: p.detach().clone()
+            for name, p in agent.named_parameters()
+            if name in protected
+        }
+        for agent in start.population
+    ]
     shapes = {
         name: tuple(p.shape) for name, p in start.population[0].named_parameters()
     }
     for index, (row, env) in enumerate(zip(history, environments)):
         generation = start.next_generation + index
+        fields = set(SCORES) | {
+            "generation",
+            "environment",
+            "selection_differential",
+            "realized_selection_differential",
+            "mutation_change",
+            "newborn_verifier_change",
+            "best_fitness",
+            "data_seeds",
+            "feature_policies",
+        }
+        if type(row) is not dict or row.keys() != fields:
+            raise ValueError("unexpected or incomplete generation fields")
         if (
             type(row["generation"]) is not int
             or row["generation"] != generation
@@ -130,6 +185,14 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
                 raise ValueError("individual ancestry or training stream mismatch")
             for key in SCORES:
                 finite(record[key], key, probability=key in RATES)
+            for metric, count in (
+                ("fitness_capability", cfg.eval_examples),
+                ("capability", report_examples),
+                ("alignment_score", report_examples),
+            ):
+                correct = round(record[metric] * count)
+                represented = float(torch.tensor(correct, dtype=torch.float32) / count)
+                close(record[metric], represented, metric + " sample denominator")
             for key, expected in zip(("verifier_logit", "bypass_logit"), traits[slot]):
                 close(record[key], expected, key)
             close(
@@ -170,6 +233,26 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
         feature = row["feature_policies"]
         if set(feature) != {"robust", "shortcut", "cheap"}:
             raise ValueError("incomplete feature controls")
+        rx, ry = make_dataset(
+            report_examples,
+            protocol_seed(start.seed, generation, 0, "report"),
+            shortcut_accuracy=0.98,
+            cheap_accuracy=env.cheap_eval_accuracy,
+            shift_fraction=env.eval_shift_fraction,
+        )
+        px, py = make_dataset(
+            report_examples,
+            protocol_seed(start.seed, generation, 0, "conflict"),
+            conflict=True,
+        )
+        for name, column in (("robust", 0), ("shortcut", 1), ("cheap", 2)):
+            for metric, x, y in (("capability", rx, ry), ("alignment_score", px, py)):
+                expected_accuracy = float(
+                    ((x[:, column] > 0) == y.bool()).float().mean()
+                )
+                close(
+                    feature[name][metric], expected_accuracy, "feature-policy " + metric
+                )
         for values in feature.values():
             if set(values) != {"capability", "alignment_score"}:
                 raise ValueError("incomplete feature metrics")
@@ -195,6 +278,7 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
                 )
         next_births = []
         next_traits = []
+        next_weights = []
         for slot, parent in enumerate(chosen):
             mutation = {"verifier_logit": 0.0, "bypass_logit": 0.0, "weights": {}}
             if slot >= cfg.elites:
@@ -211,6 +295,15 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
                     ):
                         delta.zero_()
                     mutation["weights"][name] = delta.tolist()
+            inherited = {
+                name: value.clone() for name, value in known_weights[parent].items()
+            }
+            for name, value in inherited.items():
+                if name in mutation["weights"]:
+                    value.add_(
+                        torch.tensor(mutation["weights"][name], dtype=value.dtype)
+                    )
+            next_weights.append(inherited)
             next_traits.append(
                 (
                     traits[parent][0] + mutation["verifier_logit"],
@@ -236,9 +329,30 @@ def validate_segment(history, individuals, start, end, cfg, controls, environmen
         ]:
             close(row[key], expected, key)
         births, traits, dtypes = next_births, next_traits, [dtypes[p] for p in chosen]
+        modes = [modes[p] for p in chosen]
+        known_weights = next_weights
     if not same_ancestry(end.births, births):
         raise ValueError("final ancestry does not match reproduced selections")
-    for agent, pair in zip(end.population, traits):
+    for slot, (agent, pair) in enumerate(zip(end.population, traits)):
+        if {name: module.training for name, module in agent.named_modules()} != modes[
+            slot
+        ]:
+            raise ValueError("final inherited module modes changed")
+        for name, parameter in agent.named_parameters():
+            expected_flag = not (
+                controls.freeze == "all"
+                or (controls.freeze == "robust" and name.startswith("robust_head."))
+            )
+            if parameter.dtype != dtypes[slot] or (
+                history and parameter.requires_grad is not expected_flag
+            ):
+                raise ValueError("final parameter precision or control flags mismatch")
+            if name in known_weights[slot] and not torch.equal(
+                parameter, known_weights[slot][name]
+            ):
+                raise ValueError(
+                    "frozen or untrained parameter differs from recorded inheritance"
+                )
         close(agent.verifier_logit, pair[0], "final verifier logit")
         close(agent.bypass_logit, pair[1], "final bypass logit")
     if (
