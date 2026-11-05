@@ -132,6 +132,7 @@ for module,source in [(package,project/'src/alignment_selection_dynamics'),(expe
         run(["-c", check_script, name, version, str(project)])
         # importlib mode and a separate cwd prevent checkout experiments from masking the wheel.
         run(["-m", "pytest", "--import-mode=importlib", "-q", str(project / "tests")])
+        run([str(project / "scripts/independent_reference.py"), str(project / "results/factorial-validation-v2")])
         run(["-m", "experiments.showcase", "--out", str(root / "showcase")])
         run(
             [

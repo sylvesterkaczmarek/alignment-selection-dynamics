@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alignment-selection-dynamics"
-version = "0.2.0rc1"
+version = "0.2.0"
 description = "Controlled evolutionary experiments on when alignment-linked verifier traits are selected for or optimized away."
 readme = "README.md"
 requires-python = ">=3.10"

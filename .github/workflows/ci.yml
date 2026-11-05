@@ -3,10 +3,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
   OMP_NUM_THREADS: "1"
@@ -35,6 +36,9 @@ jobs:
       - run: python -m ruff check src experiments scripts tests
       - run: python -m pytest -q
       - run: python -m experiments.verify_factorial results/factorial-validation-v2
+      - name: Independent boundary-learning and arithmetic reference
+        if: matrix.python == '3.13'
+        run: python scripts/independent_reference.py results/factorial-validation-v2
       - name: Execute complete small factorial
         if: matrix.python == '3.13'
         run: |

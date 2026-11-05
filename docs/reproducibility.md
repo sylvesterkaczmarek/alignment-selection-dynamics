@@ -88,3 +88,15 @@ CPU checkpoints are checked in separately under results/factorial-validation-v2.
 See [the audit record](audit-2026-11-05.md) for schema, strict validation and output
 compatibility. Historical result files remain unchanged. The new experiment commands
 are packaged and are tested from a non-editable wheel outside the source checkout.
+
+## Independent release reference
+
+The direct-tensor learning/arithmetic reference runs with:
+
+```sh
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python scripts/independent_reference.py results/factorial-validation-v2
+```
+
+See independent-review-2026-11-05.md for the exact scope. The source distribution
+includes this script. A changed source version should write a new study directory;
+the checked historical evidence remains unchanged.

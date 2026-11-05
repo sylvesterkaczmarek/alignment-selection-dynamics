@@ -11,9 +11,23 @@ Controlled evolutionary experiments testing when an alignment-linked verificatio
 
 Each lineage inherits a small neural policy plus two scalar traits: a verifier that corrects misleading shortcut behavior using robust evidence, and a cheap bypass path. Descendants learn, mutate, compete on capability, and reproduce. Alignment-probe performance is measured but is never directly rewarded by the fitness function.
 
-## November research candidate
+## Release 0.2.0
 
-Version **0.2.0rc1** is an unpublished candidate awaiting separate independent review.
+The independent release review adds strict checkpoint/resume bindings, typed
+study-record validation, sample-denominator checks and direct feature-control
+recomputation. The separate review suite and an independent direct-tensor reference
+are included. See [independent review](docs/independent-review-2026-11-05.md) and
+[release notes](docs/release-0.2.0.md).
+
+The release is distributed through [GitHub Releases](https://github.com/sylvesterkaczmarek/alignment-selection-dynamics/releases/tag/v0.2.0),
+with an installable wheel, source package, source archive and checksums. No PyPI
+publication is configured. Five root seeds remain the independent experimental
+sample, regardless of replay count or the number of individual records.
+
+
+## November research update
+
+Version **0.2.0** includes the separately reviewed research-integrity update.
 The existing paired factorial is retained and hardened. The new
 [validation study](docs/factorial-validation.md) uses five new root seeds, all eight
 factor combinations, four controls and two additional arms that separate training
