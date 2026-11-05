@@ -5,7 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from alignment_selection_dynamics.evolution import EvolutionConfig, run_evolution
-from alignment_selection_dynamics.io import write_json
+from alignment_selection_dynamics.io import write_json, refuse_existing
 from alignment_selection_dynamics.metrics import aggregate_final_runs, validate_seeds
 from alignment_selection_dynamics.plotting import plot_regime_metric
 from alignment_selection_dynamics.provenance import execution_metadata
@@ -16,6 +16,7 @@ REGIMES = ["safety_only", "neutral", "capability_positive"]
 
 def run(seeds: list[int], out_dir: Path, cfg: EvolutionConfig) -> dict:
     seeds = validate_seeds(seeds)
+    refuse_existing(out_dir / name for name in ['selection_regimes.json', 'selection_regimes_summary.json'])
     runs_by_regime: dict[str, list[dict]] = {}
     summary: dict[str, dict] = {}
     for regime in REGIMES:

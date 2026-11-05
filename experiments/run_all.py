@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 
-from alignment_selection_dynamics.io import write_json
+from alignment_selection_dynamics.io import write_json, refuse_existing
 from alignment_selection_dynamics.provenance import execution_metadata
 from experiments._common import argument_parser, experiment_settings
 from experiments.selection_regimes import run as run_selection_regimes
@@ -19,6 +19,7 @@ def main() -> None:
     seeds, cfg = experiment_settings(args)
     if cfg.generations < 30:
         raise SystemExit("The full reference suite requires at least 30 generations.")
+    refuse_existing(args.out / name for name in ("reference_summary.json", "selection_regimes.json", "selection_regimes_summary.json", "shortcut_challenge.json", "shortcut_challenge_summary.json"))
     selection = run_selection_regimes(seeds, args.out, cfg)
     shortcut = run_shortcut_challenge(seeds, args.out, cfg)
     write_json(
